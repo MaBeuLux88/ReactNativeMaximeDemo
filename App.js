@@ -1,6 +1,6 @@
 import 'react-native-get-random-values';
 import Realm from 'realm';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {Button, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
 import {createRealmContext} from '@realm.io/react';
 
@@ -20,25 +20,27 @@ const TodoSchema = {
 const AppWrapper = () => {
     console.log("==> AppWrapper");
     const [user, setUser] = useState(null);
-    const {RealmProvider, useRealm, useObject, useQuery} = createRealmContext({schema: [TodoSchema]});
+    const [username, setUsername] = useState('');
+    const {RealmProvider, useRealm, useQuery} = createRealmContext({schema: [TodoSchema]});
 
-    useEffect(() => {
-        console.log("Starting...")
+    const login = async () => {
+        console.log("Login function")
         const app = new Realm.App(appConfig);
         console.log("=> App not null", app !== undefined);
         const credentials = Realm.Credentials.anonymous();
-        const logUser = async () => setUser(await app.logIn(credentials));
-        logUser();
-        console.log("=> USER: ", user);
-    }, []);
+        setUser(await app.logIn(credentials));
+    };
 
-    if (!user) {
-        return <Text style={styles.text}>Loading...</Text>;
-    }
-    console.log("=> USER: ", user, user.isLoggedIn, user.id);
-    return <RealmProvider config={{schema: [TodoSchema], sync: {user, partitionValue: "Max"}}}>
-        <App useRealm={useRealm} useQuery={useQuery}/>
-    </RealmProvider>;
+    return user ? <RealmProvider config={{schema: [TodoSchema], sync: {user, partitionValue: username}}}>
+        <App useRealm={useRealm} useQuery={useQuery} username={username}/>
+    </RealmProvider> : <Login login={login} username={username} setUsername={setUsername}/>;
+}
+
+const Login = ({login, username, setUsername}) => {
+    return <View>
+        <TextInput style={styles.input} value={username} onChangeText={setUsername} />
+        <Button title='Login' onPress={login}/>
+    </View>
 }
 
 const Todos = ({todos, deleteTodo}) => {
@@ -57,7 +59,7 @@ const CreateTodo = ({addTodo}) => {
     const [task, setTask] = useState("");
 
     return <View style={styles.create}>
-        <TextInput style={styles.input} value={task} onChangeText={t => setTask(t)}/>
+        <TextInput style={styles.input} value={task} onChangeText={setTask}/>
         <Button title="+" onPress={() => {
             addTodo(task);
             setTask("");
@@ -65,13 +67,13 @@ const CreateTodo = ({addTodo}) => {
     </View>
 };
 
-const App = ({useRealm, useQuery}) => {
+const App = ({useRealm, useQuery, username}) => {
     const realm = useRealm();
     const {data: todos} = useQuery('Todo');
 
     const addTodo = (task) => {
         realm.write(() => {
-            realm.create("Todo", {_id: new Realm.BSON.ObjectId(), text: task, _partition: "Max"});
+            realm.create("Todo", {_id: new Realm.BSON.ObjectId(), text: task, _partition: username});
         });
     }
 
