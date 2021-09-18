@@ -1,17 +1,46 @@
 import 'react-native-get-random-values';
 import Realm from 'realm';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Button, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
+import {createRealmContext} from '@realm.io/react';
+import {Todo} from "./Todo";
+
+const appId = 'realmsync-fdltv';
+const appConfig = {id: appId, timeout: 10000};
+
+const AppWrapper = () => {
+    console.log("==> AppWrapper");
+    const [user, setUser] = useState(null);
+    const {RealmProvider, useRealm, useObject, useQuery} = createRealmContext({schema: [Todo.schema]});
+
+    useEffect(() => {
+        console.log("Starting...")
+        const app = new Realm.App(appConfig);
+        console.log("=> App not null", app !== undefined);
+        const credentials = Realm.Credentials.anonymous();
+        const logUser = async () => setUser(await app.logIn(credentials));
+        logUser();
+        console.log("=> USER: ", user);
+        // console.log("=> USER: ", user, user.isLoggedIn, user.id);
+    }, []);
+
+    if (!user) {
+        return <Text style={styles.text}>Loading...</Text>;
+    }
+    return <RealmProvider config={{schema: [Todo.schema], sync: {user, partitionValue: "Max"}}}>
+        <App useRealm={useRealm} useQuery={useQuery}/>
+    </RealmProvider>;
+}
 
 const Todos = ({todos, deleteTodo}) => {
     console.log('TODOS ', todos)
     return <ScrollView style={styles.todos}>
-        {todos.map(t => {
+        {todos ? todos.map(t => {
             return <View key={t._id} style={styles.todo}>
                 <Text style={styles.text}>{t.text}</Text>
                 <Button color='red' title='X' onPress={() => deleteTodo(t._id)}/>
             </View>
-        })}
+        }) : <Text style={styles.text}>No Todos...</Text>}
     </ScrollView>
 };
 
@@ -20,24 +49,27 @@ const CreateTodo = ({addTodo}) => {
 
     return <View style={styles.create}>
         <TextInput style={styles.input} value={task} onChangeText={t => setTask(t)}/>
-        <Button title="+" onPress={() => addTodo(task)}/>
+        <Button title="+" onPress={() => {
+            addTodo(task);
+            setTask("");
+        }}/>
     </View>
 };
 
-const App = () => {
-    const [todos, setTodos] = useState([])
+const App = ({useRealm, useQuery}) => {
+    const realm = useRealm();
+    const {data: todos} = useQuery('Todo');
 
     const addTodo = (task) => {
-        console.log("Adding ", task);
-        let array = todos.slice();
-        array.push({_id: new Realm.BSON.ObjectID(), text: task, _partition: "Max"});
-        setTodos(array);
+        realm.write(() => {
+            realm.create("Todo", {_id: new Realm.BSON.ObjectId(), text: task, _partition: "Max"});
+        });
     }
 
     const deleteTodo = (id) => {
-        let array = todos.slice();
-        array = array.filter(t => t._id !== id);
-        setTodos(array);
+        realm.write(() => {
+            realm.delete(realm.objectForPrimaryKey("Todo", id));
+        });
     }
 
     return <View style={styles.container}>
@@ -55,7 +87,7 @@ const styles = StyleSheet.create({
     },
     todos: {
         marginTop: 20,
-        width: '100%',
+        width: '100%'
     },
     todo: {
         flexDirection: "row",
@@ -87,4 +119,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default App;
+export default AppWrapper;
