@@ -3,15 +3,24 @@ import Realm from 'realm';
 import React, {useEffect, useState} from 'react';
 import {Button, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
 import {createRealmContext} from '@realm.io/react';
-import {Todo} from "./Todo";
 
 const appId = 'realmsync-fdltv';
 const appConfig = {id: appId, timeout: 10000};
 
+const TodoSchema = {
+    name: 'Todo',
+    properties: {
+        _id: 'objectId',
+        _partition: 'string',
+        text: 'string'
+    },
+    primaryKey: '_id',
+};
+
 const AppWrapper = () => {
     console.log("==> AppWrapper");
     const [user, setUser] = useState(null);
-    const {RealmProvider, useRealm, useObject, useQuery} = createRealmContext({schema: [Todo.schema]});
+    const {RealmProvider, useRealm, useObject, useQuery} = createRealmContext({schema: [TodoSchema]});
 
     useEffect(() => {
         console.log("Starting...")
@@ -21,13 +30,13 @@ const AppWrapper = () => {
         const logUser = async () => setUser(await app.logIn(credentials));
         logUser();
         console.log("=> USER: ", user);
-        // console.log("=> USER: ", user, user.isLoggedIn, user.id);
     }, []);
 
     if (!user) {
         return <Text style={styles.text}>Loading...</Text>;
     }
-    return <RealmProvider config={{schema: [Todo.schema], sync: {user, partitionValue: "Max"}}}>
+    console.log("=> USER: ", user, user.isLoggedIn, user.id);
+    return <RealmProvider config={{schema: [TodoSchema], sync: {user, partitionValue: "Max"}}}>
         <App useRealm={useRealm} useQuery={useQuery}/>
     </RealmProvider>;
 }
