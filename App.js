@@ -20,7 +20,10 @@ const CreateTodo = ({addTodo}) => {
 
     return <View style={styles.create}>
         <TextInput style={styles.input} value={task} onChangeText={t => setTask(t)}/>
-        <Button title="+" onPress={() => addTodo(task)}/>
+        <Button title="+" onPress={() => {
+            addTodo(task);
+            setTask("");
+        }}/>
     </View>
 };
 
