@@ -1,6 +1,6 @@
+import 'react-native-get-random-values';
 import Realm from 'realm';
 import React, {useState} from 'react';
-import 'react-native-get-random-values';
 import {Button, ScrollView, StyleSheet, Text, TextInput, View,} from 'react-native';
 
 const Todos = ({todos, deleteTodo}) => {
