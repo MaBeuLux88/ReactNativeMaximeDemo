@@ -36,6 +36,24 @@ npx react-native run-android
 npx react-native run-ios
 ```
 
+## iOS
+
+For iOS, the commands needed are:
+
+```sh
+# shell 1 - Install the deps
+npm install
+
+# shell 2 iOS - Install Cocoapods third-party dependencies
+npx pod-install
+
+# shell 3 - Start Metro
+npx react-native start
+
+# shell 3 iOS - Compile the iOS app and starts it in the iOS simulator
+npx react-native run-ios
+```
+
 # Author
 
 Maxime Beugnet <maxime@mongodb.com>
